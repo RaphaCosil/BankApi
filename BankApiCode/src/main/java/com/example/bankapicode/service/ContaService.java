@@ -32,6 +32,26 @@ public class ContaService {
     public ContaData findByNumero_conta(String numero_conta) {
         return contaRepository.findById(numero_conta).orElse(null);
     }
+    public List<ContaData> findAllBySaldoNull() {
+        return contaRepository.findAllBySaldoNull();
+    }
+
+    public List<ContaData> findAllOrderBySaldo(Double saldo) {
+        return contaRepository.findAllOrderBySaldo(saldo);
+    }
+
+    public List<ContaData> findAllBySaldoIsLessThan(Double saldo) {
+        return contaRepository.findAllBySaldoIsLessThan(saldo);
+    }
+    public List<ContaData> findAllByCliente_cpf(String cliente_cpf) {
+        List<ContaData> contas = contaRepository.findAll();
+        for (ContaData conta : contas) {
+            if (conta.getCliente_cpf().equals(cliente_cpf)) {
+                return List.of(conta);
+            }
+        }
+        return List.of();
+    }
 
     public ContaData save(ContaData contaData) {
         if(clienteService.findByCpf(contaData.getCliente_cpf())!=null){
@@ -43,11 +63,6 @@ public class ContaService {
             return null;
         }
     }
-
-    public void delete(ContaData contaData) {
-        contaRepository.delete(contaData);
-    }
-
     public Optional<ContaData> updateByNumero_conta(String numero_conta, ContaData newContaData) {
         Optional<ContaData> contaData = contaRepository.findById(numero_conta);
         if (contaData.isPresent()) {
@@ -81,29 +96,34 @@ public class ContaService {
     }
 
     public Optional<TransferenciaResultado> transfer(String tipo, String numero_conta_origem, String numero_conta_destino, Double valor) {
-        if(tipo.equalsIgnoreCase("ted")) {
-            if(LocalDateTime.now().getDayOfWeek()!= DayOfWeek.SATURDAY && LocalDateTime.now().getDayOfWeek()!=DayOfWeek.SUNDAY) {
-                if(LocalDateTime.now().getHour() >= 8 && LocalDateTime.now().getHour() <= 17) {
-                    if(valor <= 1000) {
-                        return Optional.ofNullable(transferencia(tipo, numero_conta_origem, numero_conta_destino, valor));
+        if(verifyClientExistence(numero_conta_origem)!=null && verifyClientExistence(numero_conta_destino)!=null) {
+            if(tipo.equalsIgnoreCase("ted")) {
+                if(LocalDateTime.now().getDayOfWeek()!= DayOfWeek.SATURDAY && LocalDateTime.now().getDayOfWeek()!=DayOfWeek.SUNDAY) {
+                    if(LocalDateTime.now().getHour() >= 8 && LocalDateTime.now().getHour() <= 17) {
+                        if(valor <= 1000) {
+                            return Optional.ofNullable(transferencia(tipo, numero_conta_origem, numero_conta_destino, valor));
+                        }
+                        else {
+                            throw new IllegalArgumentException("O valor deve ser menor que 1000");
+                        }
                     }
                     else {
-                        throw new IllegalArgumentException("O valor deve ser menor que 1000");
+                        throw new IllegalArgumentException("A hora da transferecia ted deve estar entre 8 e 17");
                     }
                 }
                 else {
-                    throw new IllegalArgumentException("A hora da transferecia ted deve estar entre 8 e 17");
+                    throw new IllegalArgumentException("A transferecia ted nao pode ser feita aos finais de semana");
                 }
             }
+            else if(tipo.equalsIgnoreCase("pix")) {
+                return Optional.ofNullable(transferencia(tipo, numero_conta_origem, numero_conta_destino, valor));
+            }
             else {
-                throw new IllegalArgumentException("A transferecia ted nao pode ser feita aos finais de semana");
+                throw new IllegalArgumentException("Tipo de transferecia invalida");
             }
         }
-        else if(tipo.equalsIgnoreCase("pix")) {
-            return Optional.ofNullable(transferencia(tipo, numero_conta_origem, numero_conta_destino, valor));
-        }
         else {
-            throw new IllegalArgumentException("Tipo de transferecia invalida");
+            throw new IllegalArgumentException("Conta nao encontrada");
         }
     }
     public Optional<TransacaoResultado> depositar(String numero_conta, Double valor) {
@@ -127,7 +147,7 @@ public class ContaService {
         }
     }
     public TransferenciaResultado transferencia(String tipo, String numero_conta_origem, String numero_conta_destino, Double valor){
-        if(verifyLimit(valor, numero_conta_origem)) {
+        if(!verifyLimit(valor, numero_conta_origem)) {
             throw new IllegalArgumentException("Limite ultrapassado");
         }else{
             ContaData contaOrigem = contaRepository.findById(numero_conta_origem).get();
