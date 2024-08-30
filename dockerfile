@@ -1,4 +1,3 @@
-#
 # Build Package
 #
 FROM maven:3.8.6-openjdk-17-slim AS build
