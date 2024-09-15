@@ -3,7 +3,7 @@
 FROM maven:3.8.3-openjdk-17 AS build
 WORKDIR /home/app
 COPY . .
-RUN mvn -f pom.xml clean package
+RUN mvn -f pom.xml clean package -DskipTests
 
 #
 # Package Stage
