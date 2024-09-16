@@ -22,8 +22,6 @@ jobs:
     - name: Compilar por MAVEN
       run: mvn -B package --file pom.xml
     - name: Render Deploy Action
-    # You may pin to the exact commit or the version.
-    # uses: johnbeynon/render-deploy-action@a0588f9aca995a15d69a72cb2bfbf37c12e5b540
       uses: johnbeynon/render-deploy-action@v0.0.8
       with:
         # ID of the service to deploy
